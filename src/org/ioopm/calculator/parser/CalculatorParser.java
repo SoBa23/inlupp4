@@ -60,19 +60,21 @@ public class CalculatorParser {
      */
     private SymbolicExpression statement() throws IOException {
         SymbolicExpression result;
-        this.st.nextToken(); //kollar pÃ¥ nÃ¤sta token som ligger pÃ¥ strÃ¶mmen
+        this.st.nextToken(); // Look at the next token on the stream
         if (this.st.ttype == this.st.TT_EOF) {
             throw new SyntaxErrorException("Error: Expected an expression");
         }
 
-        if (this.st.ttype == this.st.TT_WORD) { // vilken typ det senaste tecken vi lÃ¤ste in hade.
-            if (this.st.sval.equals("Quit") || this.st.sval.equals("Vars") || this.st.sval.equals("Clear")) { // sval = string Variable
+        if (this.st.ttype == this.st.TT_WORD) {
+            if (this.st.sval.equals("Quit") || this.st.sval.equals("Vars") || this.st.sval.equals("Clear")) {
                 result = command();
             } else {
-                result = assignment(); // gÃ¥r vidare med uttrycket.
+                this.st.pushBack();
+                result = assignment();
             }
         } else {
-            result = assignment(); // om inte == word, gÃ¥ till assignment Ã¤ndÃ¥ (kan vara tt_number)
+            this.st.pushBack();
+            result = assignment();
         }
 
         if (this.st.nextToken() != this.st.TT_EOF) { // token should be an end of stream token if we are done
@@ -176,7 +178,15 @@ public class CalculatorParser {
      */
     private SymbolicExpression expression() throws IOException {
         SymbolicExpression result = term();
+
         this.st.nextToken();
+        // Stop parsing if we encounter the end of a scope. The token is pushed
+        // back so the surrounding code can handle the closing brace.
+        if (this.st.ttype == '}') {
+            this.st.pushBack();
+            return result;
+        }
+
         while (this.st.ttype == ADDITION || this.st.ttype == SUBTRACTION) {
             int operation = st.ttype;
             this.st.nextToken();
@@ -185,7 +195,13 @@ public class CalculatorParser {
             } else {
                 result = new Subtraction(result, term());
             }
+
             this.st.nextToken();
+
+            if (this.st.ttype == '}') {
+                // Do not consume the closing brace; leave it for the caller.
+                break;
+            }
         }
         this.st.pushBack();
         return result;
@@ -200,7 +216,14 @@ public class CalculatorParser {
      */
     private SymbolicExpression term() throws IOException {
         SymbolicExpression result = primary();
+
         this.st.nextToken();
+
+        if (this.st.ttype == '}') {
+            this.st.pushBack();
+            return result;
+        }
+
         while (this.st.ttype == MULTIPLY || this.st.ttype == DIVISION) {
             int operation = st.ttype;
             this.st.nextToken();
@@ -211,6 +234,10 @@ public class CalculatorParser {
                 result = new Division(result, primary());
             }
             this.st.nextToken();
+
+            if (this.st.ttype == '}') {
+                break;
+            }
         }
         this.st.pushBack();
         return result;
@@ -318,7 +345,13 @@ public class CalculatorParser {
     
         while (true) {
             this.st.nextToken();
+
+            if (this.st.ttype == this.st.TT_EOF) {
+                throw new SyntaxErrorException("Error: Unexpected end of input inside scope");
+            }
+
             if (this.st.ttype == '}') { // Slutet av scopet
+                this.st.pushBack(); // Let the caller see the closing brace
                 break;
             }
             this.st.pushBack();

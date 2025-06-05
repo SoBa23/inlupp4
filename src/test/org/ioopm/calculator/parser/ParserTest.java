@@ -215,4 +215,22 @@ public class ParserTest {
             }
         });
     }
+
+    /**
+     * Regression test for parsing a simple scope.
+     */
+    @Test
+    public void testParseSimpleScope() throws IOException {
+        SymbolicExpression result = parser.parse("{x}", new ScopedEnvironment());
+        assertTrue(result instanceof Scope);
+    }
+
+    /**
+     * Regression test ensuring scopes followed by expressions do not loop.
+     */
+    @Test
+    public void testParseScopeExpressionCombination() throws IOException {
+        SymbolicExpression result = parser.parse("{1 = x} + {x}", new ScopedEnvironment());
+        assertTrue(result instanceof Addition);
+    }
 }
