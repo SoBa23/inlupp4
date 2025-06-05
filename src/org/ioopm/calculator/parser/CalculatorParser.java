@@ -354,7 +354,7 @@ public class CalculatorParser {
             }
 
             if (this.st.ttype == '}') { // Slutet av scopet
-                this.st.pushBack(); // Let the caller see the closing brace
+                // Do not push back the closing brace here; it belongs to this scope
                 break;
             }
             this.st.pushBack();
