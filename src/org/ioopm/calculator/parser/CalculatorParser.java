@@ -406,13 +406,22 @@ public class CalculatorParser {
             throw new SyntaxErrorException("Error: Expected '(' after function name");
         }
         List<String> parameters = new ArrayList<>();
-        while (this.st.nextToken() != ')') {
-            if (this.st.ttype != StreamTokenizer.TT_WORD) {
-                throw new SyntaxErrorException("Error: Expected parameter name");
-            }
-            parameters.add(this.st.sval);
-            if (this.st.nextToken() != ',' && this.st.ttype != ')') {
-                throw new SyntaxErrorException("Error: Expected ',' or ')' in parameter list");
+        this.st.nextToken();
+        if (this.st.ttype != ')') {
+            while (true) {
+                if (this.st.ttype != StreamTokenizer.TT_WORD) {
+                    throw new SyntaxErrorException("Error: Expected parameter name");
+                }
+                parameters.add(this.st.sval);
+                this.st.nextToken();
+                if (this.st.ttype == ')') {
+                    break;
+                } else if (this.st.ttype == ',') {
+                    this.st.nextToken();
+                    continue;
+                } else {
+                    throw new SyntaxErrorException("Error: Expected ',' or ')' in parameter list");
+                }
             }
         }
 
@@ -441,12 +450,20 @@ public class CalculatorParser {
             throw new SyntaxErrorException("Error: Expected '(' after function name");
         }
         List<SymbolicExpression> arguments = new ArrayList<>();
-        while (this.st.nextToken() != ')') {
-            this.st.pushBack();
-            arguments.add(expression());
-            this.st.nextToken();
-            if (this.st.ttype != ',' && this.st.ttype != ')') {
-                throw new SyntaxErrorException("Error: Expected ',' or ')' in argument list");
+        this.st.nextToken();
+        if (this.st.ttype != ')') {
+            while (true) {
+                this.st.pushBack();
+                arguments.add(expression());
+                this.st.nextToken();
+                if (this.st.ttype == ')') {
+                    break;
+                } else if (this.st.ttype == ',') {
+                    this.st.nextToken();
+                    continue;
+                } else {
+                    throw new SyntaxErrorException("Error: Expected ',' or ')' in argument list");
+                }
             }
         }
 
