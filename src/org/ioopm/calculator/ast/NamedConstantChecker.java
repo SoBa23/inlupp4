@@ -1,0 +1,155 @@
+package org.ioopm.calculator.ast;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class NamedConstantChecker implements Visitor {
+    private List<String> illegalAssignments = new ArrayList<>();
+    private boolean hasError = false;
+
+    public boolean check(SymbolicExpression topLevel) {
+        illegalAssignments.clear();
+        topLevel.accept(this);
+        return illegalAssignments.isEmpty();
+    }
+
+    public List<String> getIllegalAssignments() {
+        return illegalAssignments;
+    }
+
+    @Override
+    public SymbolicExpression visit(Addition a) {
+        a.getLhs().accept(this);
+        a.getRhs().accept(this);
+        return null;
+    }
+
+    @Override
+    public SymbolicExpression visit(Subtraction s) {
+        s.getLhs().accept(this);
+        s.getRhs().accept(this);
+        return null;
+    }
+
+    @Override
+    public SymbolicExpression visit(Multiplication m) {
+        m.getLhs().accept(this);
+        m.getRhs().accept(this);
+        return null;
+    }
+
+    @Override
+    public SymbolicExpression visit(Division d) {
+        d.getLhs().accept(this);
+        d.getRhs().accept(this);
+        return null;
+    }
+    
+    @Override
+public SymbolicExpression visit(Assignment a) {
+    SymbolicExpression lhs = a.getLhs();
+    if (lhs instanceof NamedConstant) {
+        throw new RuntimeException("Error: Assignment to a named constant '" + lhs + "'");
+    }
+    a.getRhs().accept(this);
+    return a;
+}
+
+    @Override
+    public SymbolicExpression visit(Constant c) {
+        return null;
+    }
+
+    @Override
+    public SymbolicExpression visit(Variable v) {
+        return null;
+    }
+
+    @Override
+    public SymbolicExpression visit(Negation n) {
+        n.getOperand().accept(this);
+        return null;
+    }
+
+    @Override
+    public SymbolicExpression visit(Sin s) {
+        s.getOperand().accept(this);
+        return null;
+    }
+
+    @Override
+    public SymbolicExpression visit(Cos c) {
+        c.getOperand().accept(this);
+        return null;
+    }
+
+    @Override
+    public SymbolicExpression visit(Log l) {
+        l.getOperand().accept(this);
+        return null;
+    }
+
+    @Override
+    public SymbolicExpression visit(Exp e) {
+        e.getOperand().accept(this);
+        return null;
+    }
+
+    @Override
+    public SymbolicExpression visit(Quit q) {
+        return null;
+    }
+
+    @Override
+    public SymbolicExpression visit(Clear c) {
+        return null;
+    }
+
+    @Override
+    public SymbolicExpression visit(Vars v) {
+        return null;
+    }
+
+    @Override
+    public SymbolicExpression visit(Scope s) {
+        s.getBody().accept(this);
+        return null;
+    }
+
+    @Override
+    public SymbolicExpression visit(Conditional c) {
+        //check condition lhs and rhs
+        c.getConditionLhs().accept(this);
+        c.getConditionRhs().accept(this);
+        //check the scopes
+        c.getIfScope().accept(this);
+        c.getElseScope().accept(this);
+        return null;
+    }
+
+    @Override
+    public SymbolicExpression visit(FunctionDeclaration fd) {
+        fd.getBody().accept(this);
+        return fd;
+    }
+
+    @Override
+    public SymbolicExpression visit(FunctionCall f) {
+        for (SymbolicExpression arg : f.getArguments()) {
+            arg.accept(this);
+        }
+        return null;
+    }
+
+    @Override
+    public SymbolicExpression visit(Sequence seq) {
+        for (SymbolicExpression expr : seq.getExpressions()) {
+            expr.accept(this); // Kontrollera varje uttryck i sekvensen
+        }
+        return seq;
+    }
+
+    public boolean hasError() {
+        return hasError;
+    }
+}

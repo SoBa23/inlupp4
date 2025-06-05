@@ -1,0 +1,10 @@
+Welcome to the Symbolic Calculator!
+Type 'Quit' to exit, 'Clear' to clear variables, or 'Vars' to see all variables.
+? 8.0
+? 4.0
+? Exiting...
+Goodbye!
+Statistics:
+    Total Expressions Entered: 3
+    Successfully Evaluated: 2
+    Fully Evaluated: 2

@@ -1,0 +1,13 @@
+Welcome to the Symbolic Calculator!
+Type 'Quit' to exit, 'Clear' to clear variables, or 'Vars' to see all variables.
+? 5.0
+? 8.0
+? {ans=8.0, x=5.0}
+? All variables cleared.
+? {}
+? Exiting...
+Goodbye!
+Statistics:
+    Total Expressions Entered: 6
+    Successfully Evaluated: 2
+    Fully Evaluated: 2

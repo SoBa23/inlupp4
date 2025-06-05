@@ -1,0 +1,6 @@
+5 = x
+x + 3
+Vars
+Clear
+Vars
+Quit
