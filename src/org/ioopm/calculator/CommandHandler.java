@@ -9,7 +9,9 @@ public class CommandHandler {
 
     public static void handleCommand(SymbolicExpression command, Environment env) {
         if (command instanceof Quit) {
-            System.out.println("Exiting...");
+            // The main program prints the final exit message so
+            // we simply return here without producing output.
+            return;
         } else if (command instanceof Vars) {
             System.out.println(env.toString());
         } else if (command instanceof Clear) {

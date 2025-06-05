@@ -69,11 +69,14 @@ public class CalculatorParser {
             if (this.st.sval.equals("Quit") || this.st.sval.equals("Vars") || this.st.sval.equals("Clear")) {
                 result = command();
             } else {
-                this.st.pushBack();
+                // The first token of the expression has already been read
+                // so we let the assignment parser continue from it without
+                // pushing it back onto the stream.
                 result = assignment();
             }
         } else {
-            this.st.pushBack();
+            // Likewise for non-word tokens we simply continue parsing the
+            // assignment/expression from the current token.
             result = assignment();
         }
 
@@ -351,7 +354,7 @@ public class CalculatorParser {
             }
 
             if (this.st.ttype == '}') { // Slutet av scopet
-                this.st.pushBack(); // Let the caller see the closing brace
+                // Do not push back the closing brace here; it belongs to this scope
                 break;
             }
             this.st.pushBack();
@@ -403,13 +406,22 @@ public class CalculatorParser {
             throw new SyntaxErrorException("Error: Expected '(' after function name");
         }
         List<String> parameters = new ArrayList<>();
-        while (this.st.nextToken() != ')') {
-            if (this.st.ttype != StreamTokenizer.TT_WORD) {
-                throw new SyntaxErrorException("Error: Expected parameter name");
-            }
-            parameters.add(this.st.sval);
-            if (this.st.nextToken() != ',' && this.st.ttype != ')') {
-                throw new SyntaxErrorException("Error: Expected ',' or ')' in parameter list");
+        this.st.nextToken();
+        if (this.st.ttype != ')') {
+            while (true) {
+                if (this.st.ttype != StreamTokenizer.TT_WORD) {
+                    throw new SyntaxErrorException("Error: Expected parameter name");
+                }
+                parameters.add(this.st.sval);
+                this.st.nextToken();
+                if (this.st.ttype == ')') {
+                    break;
+                } else if (this.st.ttype == ',') {
+                    this.st.nextToken();
+                    continue;
+                } else {
+                    throw new SyntaxErrorException("Error: Expected ',' or ')' in parameter list");
+                }
             }
         }
 
@@ -438,12 +450,20 @@ public class CalculatorParser {
             throw new SyntaxErrorException("Error: Expected '(' after function name");
         }
         List<SymbolicExpression> arguments = new ArrayList<>();
-        while (this.st.nextToken() != ')') {
-            this.st.pushBack();
-            arguments.add(expression());
-            this.st.nextToken();
-            if (this.st.ttype != ',' && this.st.ttype != ')') {
-                throw new SyntaxErrorException("Error: Expected ',' or ')' in argument list");
+        this.st.nextToken();
+        if (this.st.ttype != ')') {
+            while (true) {
+                this.st.pushBack();
+                arguments.add(expression());
+                this.st.nextToken();
+                if (this.st.ttype == ')') {
+                    break;
+                } else if (this.st.ttype == ',') {
+                    this.st.nextToken();
+                    continue;
+                } else {
+                    throw new SyntaxErrorException("Error: Expected ',' or ')' in argument list");
+                }
             }
         }
 
