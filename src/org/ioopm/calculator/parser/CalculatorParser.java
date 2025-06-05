@@ -115,27 +115,28 @@ public class CalculatorParser {
     private SymbolicExpression assignment() throws IOException {
         SymbolicExpression result = expression();
         this.st.nextToken();
-    
+
         while (this.st.ttype == '=') {
             this.st.nextToken();
-    
-            // Kontrollera att vänster sida är en giltig variabel
-            if (result instanceof NamedConstant) {
-                throw new RuntimeException("Error: Assignment to a named constant '" + result + "'");
-            }
-    
-            if (!(result instanceof Variable)) {
-                throw new SyntaxErrorException("Error: Left-hand side of assignment must be a variable");
-            }
-    
+
+            // Right-hand side should be an identifier representing the variable
             if (this.st.ttype == this.st.TT_NUMBER) {
                 throw new SyntaxErrorException("Error: Numbers cannot be used as variable names");
             } else if (this.st.ttype != this.st.TT_WORD) {
                 throw new SyntaxErrorException("Error: Invalid assignment syntax");
-            } else {
-                SymbolicExpression key = identifier();
-                result = new Assignment(result, key);
             }
+
+            SymbolicExpression key = identifier();
+
+            if (key instanceof NamedConstant) {
+                throw new RuntimeException("Error: Assignment to a named constant '" + key + "'");
+            }
+
+            if (!(key instanceof Variable)) {
+                throw new SyntaxErrorException("Error: Right-hand side of assignment must be a variable");
+            }
+
+            result = new Assignment(result, key);
             this.st.nextToken();
         }
     
@@ -325,7 +326,7 @@ public class CalculatorParser {
         }
     
         env.popEnvironment(); // Avsluta scopet
-        return new Sequence(expressions); // Returnera en sekvens av uttryck
+        return new Scope(new Sequence(expressions)); // Returnera ett Scope med en sekvens av uttryck
     }
     
     
