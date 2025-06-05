@@ -47,9 +47,7 @@ public class Calculator {
                         break;
                     }
                 } else {
-                    env.pushEnvironment();
                     if (!namedChecker.check(expr)) {
-                        env.popEnvironment();
                         System.out.println("Error, assignments to named constants:");
                         for (String illegal : namedChecker.getIllegalAssignments()) {
                             System.out.println("    " + illegal);
@@ -57,9 +55,7 @@ public class Calculator {
                         continue;
                     }
 
-                    env.pushEnvironment();
                     if (!reassignmentChecker.check(expr)) {
-                        env.popEnvironment();
                         System.out.println("Error, the following variables are reassigned:");
                         for (String variable : reassignmentChecker.getReassignedVariables()) {
                             System.out.println("    " + variable);
@@ -70,7 +66,6 @@ public class Calculator {
                     expressionsEntered++;
                     SymbolicExpression result = evaluator.evaluate(expr, env);
                     successfullyEvaluated++;
-                    env.popEnvironment();
 
                     if (result.isConstant()) {
                         fullyEvaluated++;
