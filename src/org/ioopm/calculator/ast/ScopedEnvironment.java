@@ -39,12 +39,18 @@ public class ScopedEnvironment extends Environment {
     }
 
     @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder("ScopedEnvironment:\n");
+    public void clear() {
+        // Clear variables in all scopes to mimic clearing the environment
         for (Environment env : scopeStack) {
-            sb.append(env.toString()).append("\n");
+            env.clear();
         }
-        return sb.toString();
+    }
+
+    @Override
+    public String toString() {
+        // Present the variables visible in the current (top) scope
+        // in the same style as the plain Environment implementation
+        return scopeStack.peek().toString();
     }
 
     public Environment topEnvironment() {

@@ -40,6 +40,7 @@ public class Calculator {
 
             try {
                 SymbolicExpression expr = parser.parse(input, env);
+                expressionsEntered++;
 
                 if (expr.isCommand()) {
                     CommandHandler.handleCommand(expr, env);
@@ -63,7 +64,6 @@ public class Calculator {
                         continue;
                     }
 
-                    expressionsEntered++;
                     SymbolicExpression result = evaluator.evaluate(expr, env);
                     successfullyEvaluated++;
 

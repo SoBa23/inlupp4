@@ -69,11 +69,14 @@ public class CalculatorParser {
             if (this.st.sval.equals("Quit") || this.st.sval.equals("Vars") || this.st.sval.equals("Clear")) {
                 result = command();
             } else {
-                this.st.pushBack();
+                // The first token of the expression has already been read
+                // so we let the assignment parser continue from it without
+                // pushing it back onto the stream.
                 result = assignment();
             }
         } else {
-            this.st.pushBack();
+            // Likewise for non-word tokens we simply continue parsing the
+            // assignment/expression from the current token.
             result = assignment();
         }
 
