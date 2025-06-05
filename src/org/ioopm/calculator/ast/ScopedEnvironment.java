@@ -34,6 +34,20 @@ public class ScopedEnvironment extends Environment {
     }
 
     @Override
+    public boolean containsKey(Object key) {
+        if (!(key instanceof Variable)) {
+            return false;
+        }
+        Variable var = (Variable) key;
+        for (Environment env : scopeStack) {
+            if (env.containsKey(var)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
     public SymbolicExpression put(Variable key, SymbolicExpression value) {
         return scopeStack.peek().put(key, value);
     }

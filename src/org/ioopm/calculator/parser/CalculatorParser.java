@@ -48,7 +48,7 @@ public class CalculatorParser {
         this.st.ordinaryChar('-');
         this.st.ordinaryChar('/');
         this.st.eolIsSignificant(true);
-        SymbolicExpression result = statement(); // calls to statement
+        SymbolicExpression result = statement(true); // parse a complete statement
         return result; // the final result
     }
 
@@ -58,7 +58,11 @@ public class CalculatorParser {
      * @throws IOException by nextToken() if it reads invalid input
      * @throws SyntaxErrorException if the token parsed cannot be turned into a valid expression
      */
-    private SymbolicExpression statement() throws IOException {
+    // Parse a single statement. If enforceEOF is true, the statement must
+    // consume the entire input stream. This is the normal behaviour when
+    // parsing user expressions. When parsing parts of a function body we
+    // allow remaining tokens so the caller can continue parsing.
+    private SymbolicExpression statement(boolean enforceEOF) throws IOException {
         SymbolicExpression result;
         this.st.nextToken(); // Look at the next token on the stream
         if (this.st.ttype == this.st.TT_EOF) {
@@ -79,12 +83,21 @@ public class CalculatorParser {
             // assignment/expression from the current token.
             result = assignment();
         }
-
-        if (this.st.nextToken() != this.st.TT_EOF) { // token should be an end of stream token if we are done
-            if (this.st.ttype == this.st.TT_WORD) {
-                throw new SyntaxErrorException("Error: Unexpected '" + this.st.sval + "'");
-            } else {
-                throw new SyntaxErrorException("Error: Unexpected '" + String.valueOf((char) this.st.ttype) + "'");
+        if (enforceEOF) {
+            // When parsing top-level expressions there should be no tokens left
+            // after the statement has been parsed.
+            if (this.st.nextToken() != this.st.TT_EOF) {
+                if (this.st.ttype == this.st.TT_WORD) {
+                    throw new SyntaxErrorException("Error: Unexpected '" + this.st.sval + "'");
+                } else {
+                    throw new SyntaxErrorException("Error: Unexpected '" + String.valueOf((char) this.st.ttype) + "'");
+                }
+            }
+        } else {
+            // Leave the next token for the caller
+            int next = this.st.nextToken();
+            if (next != this.st.TT_EOF) {
+                this.st.pushBack();
             }
         }
         return result;
@@ -432,7 +445,7 @@ public class CalculatorParser {
                 break;
             }
             this.st.pushBack();
-            body.add(statement());
+            body.add(statement(false));
         }
         return new FunctionDeclaration(functionName, parameters, new Sequence(body));
     }
