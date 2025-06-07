@@ -129,6 +129,11 @@ public class ReassignmentChecker implements Visitor {
     }
 
     @Override
+    public SymbolicExpression visit(End e) {
+        return null;
+    }
+
+    @Override
     public SymbolicExpression visit(Scope s) {
         scopeStack.push(new HashSet<>()); // Enter a new scope
         s.getBody().accept(this); // Visit the body of the scope

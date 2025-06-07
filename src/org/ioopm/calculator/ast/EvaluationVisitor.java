@@ -148,7 +148,8 @@ public class EvaluationVisitor implements Visitor {
     @Override
     public SymbolicExpression visit(Variable n) {
         if (!env.containsKey(n)) {
-            throw new RuntimeException("Variable '" + n.getName() + " ' is undefined");
+            // Free variables remain symbolic
+            return n;
         }
         return env.get(n);
     }
@@ -156,6 +157,11 @@ public class EvaluationVisitor implements Visitor {
     @Override
     public SymbolicExpression visit(Vars n) {
         env.forEach((key, value) -> System.out.println(key + " = " + value));
+        return n;
+    }
+
+    @Override
+    public SymbolicExpression visit(End n) {
         return n;
     }
 
@@ -198,7 +204,7 @@ public class EvaluationVisitor implements Visitor {
 
     @Override
     public SymbolicExpression visit(FunctionDeclaration fd) {
-        env.putFunction(fd.getName(), fd);
+        env.putFunction(fd.getIdentifier(), fd);
         return fd;
     }
 

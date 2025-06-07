@@ -27,6 +27,9 @@ public class Calculator {
         System.out.println("Welcome to the Symbolic Calculator!");
         System.out.println("Type 'Quit' to exit, 'Clear' to clear variables, or 'Vars' to see all variables.");
 
+        boolean inFunction = false;
+        FunctionDeclaration currentFunction = null;
+
         while (true) {
             System.out.print("? ");
             if (!sc.hasNextLine()) {
@@ -42,11 +45,30 @@ public class Calculator {
                 SymbolicExpression expr = parser.parse(input, env);
                 expressionsEntered++;
 
+                if (inFunction) {
+                    if (expr instanceof End) {
+                        env.putFunction(currentFunction.getIdentifier(), currentFunction);
+                        inFunction = false;
+                        System.out.println(currentFunction);
+                        continue;
+                    } else if (expr instanceof FunctionDeclaration) {
+                        System.out.println("Error: Nested function definitions are not allowed");
+                        inFunction = false;
+                        continue;
+                    } else {
+                        currentFunction.addLine(expr);
+                        continue;
+                    }
+                }
+
                 if (expr.isCommand()) {
                     CommandHandler.handleCommand(expr, env);
                     if (expr instanceof Quit) {
                         break;
                     }
+                } else if (expr instanceof FunctionDeclaration) {
+                    inFunction = true;
+                    currentFunction = (FunctionDeclaration) expr;
                 } else {
                     if (!namedChecker.check(expr)) {
                         System.out.println("Error, assignments to named constants:");

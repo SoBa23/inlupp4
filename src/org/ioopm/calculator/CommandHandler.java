@@ -17,6 +17,9 @@ public class CommandHandler {
         } else if (command instanceof Clear) {
             env.clear();
             System.out.println("All variables cleared.");
+        } else if (command instanceof End) {
+            // End is handled by the main program when parsing functions
+            return;
         } else {
             throw new RuntimeException("Unhandled command: " + command);
         }
