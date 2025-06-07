@@ -30,6 +30,7 @@ import org.ioopm.calculator.ast.Log;
 import org.ioopm.calculator.ast.Exp;
 import org.ioopm.calculator.ast.Constants;
 import org.ioopm.calculator.*;
+import org.ioopm.calculator.ast.End;
 
 /**
  * Represents the parsing of strings into valid expressions defined in the AST.
@@ -52,11 +53,14 @@ public class CalculatorParser {
     // unallowerdVars is used to check if variabel name that we
     // want to assign new meaning to is a valid name eg 3 = Quit
     // or 10 + x = L is not allowed
-    private final ArrayList < String > unallowedVars = new ArrayList < String > (Arrays.asList("Quit",
+    private final ArrayList<String> unallowedVars = new ArrayList<String>(Arrays.asList(
+        "Quit",
         "Vars",
         "Clear",
-        "End",
-        "Function"));
+        "end",
+        "function",
+        "if",
+        "else"));
 
     /**
      * Used to parse the inputted string by the Calculator program
@@ -92,9 +96,9 @@ public class CalculatorParser {
         }
 
         if (this.st.ttype == this.st.TT_WORD) { // vilken typ det senaste tecken vi lÃ¤ste in hade.
-            if (this.st.sval.equals("Quit") || this.st.sval.equals("Vars") || this.st.sval.equals("Clear") || this.st.sval.equals("End")) { // sval = string Variable
+            if (this.st.sval.equals("Quit") || this.st.sval.equals("Vars") || this.st.sval.equals("Clear") || this.st.sval.equals("end")) { // sval = string Variable
                 result = command();
-            } else if (this.st.sval.equals("Function")) {
+            } else if (this.st.sval.equals("function")) {
                 result = functionDeclaration();
             } else {
                 result = assignment(); // gÃ¥r vidare med uttrycket.
@@ -124,8 +128,10 @@ public class CalculatorParser {
             return Quit.instance();
         } else if (this.st.sval.equals("Clear")) {
             return Clear.instance();
-        }else if (this.st.sval.equals("Vars")) {
+        } else if (this.st.sval.equals("Vars")) {
             return Vars.instance();
+        } else if (this.st.sval.equals("end")) {
+            return End.instance();
         } else {
             return Vars.instance();
         }

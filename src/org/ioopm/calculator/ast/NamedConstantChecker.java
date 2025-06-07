@@ -111,6 +111,11 @@ public SymbolicExpression visit(Assignment a) {
     }
 
     @Override
+    public SymbolicExpression visit(End e) {
+        return null;
+    }
+
+    @Override
     public SymbolicExpression visit(Scope s) {
         s.getBody().accept(this);
         return null;

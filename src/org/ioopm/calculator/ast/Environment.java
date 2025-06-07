@@ -10,13 +10,18 @@ import java.util.TreeSet;
  */
 public class Environment extends HashMap<Variable, SymbolicExpression> {
     private FuncEnvironment functions;
-    
+
     public Environment() {
         super();
+        this.functions = new FuncEnvironment();
     }
 
     public Environment(Environment other) {
         super(other);
+        this.functions = new FuncEnvironment();
+        if (other.getFunctions() != null) {
+            this.functions.putAll(other.getFunctions());
+        }
     }
 
     public FuncEnvironment getFunctions() {
@@ -53,14 +58,11 @@ public class Environment extends HashMap<Variable, SymbolicExpression> {
     }
 
     public void putFunction(String name, FunctionDeclaration fd) {
+        this.functions.put(name, fd);
         this.put(new Variable(name), fd);
     }
 
     public FunctionDeclaration getFunction(String functionName) {
-        SymbolicExpression expr = this.get(new Variable(functionName));
-        if (expr instanceof FunctionDeclaration) {
-            return (FunctionDeclaration) expr;
-        }
-        return null;
+        return this.functions.get(functionName);
     }
 }

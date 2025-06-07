@@ -72,6 +72,11 @@ public class ScopedEnvironment extends Environment {
     }
 
     @Override
+    public FuncEnvironment getFunctions() {
+        return topEnvironment().getFunctions();
+    }
+
+    @Override
     public void putFunction(String name, FunctionDeclaration fd) {
         scopeStack.peek().putFunction(name, fd);
     }

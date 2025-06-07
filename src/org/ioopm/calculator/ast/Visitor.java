@@ -20,6 +20,7 @@ public interface Visitor {
     SymbolicExpression visit(Subtraction n);
     SymbolicExpression visit(Variable n);
     SymbolicExpression visit(Vars n);
+    SymbolicExpression visit(End n);
     SymbolicExpression visit(Scope n);
     SymbolicExpression visit(Conditional n);
     SymbolicExpression visit(FunctionDeclaration n);
