@@ -373,6 +373,11 @@ public class CalculatorParser {
      */
     private SymbolicExpression conditional() throws IOException{
         this.st.nextToken();
+        boolean paren = false;
+        if (this.st.ttype == '(') {
+            paren = true;
+            this.st.nextToken();
+        }
         SymbolicExpression lhs = expression();
 
         this.st.nextToken();
@@ -405,6 +410,13 @@ public class CalculatorParser {
         }
         this.st.nextToken();
         SymbolicExpression rhs = expression();
+
+        if (paren) {
+            this.st.nextToken();
+            if (this.st.ttype != ')') {
+                throw new SyntaxErrorException("expected ')'");
+            }
+        }
         
         // if branch, could have just called primary so the it becomes a scope duplicated code
         if (this.st.nextToken() != '{') {
