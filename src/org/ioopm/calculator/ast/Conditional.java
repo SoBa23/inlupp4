@@ -7,7 +7,7 @@ public class Conditional extends SymbolicExpression {
     private final SymbolicExpression ifScope;
     private final SymbolicExpression elseScope;
 
-    public Conditional(SymbolicExpression conditionLhs, String operator, SymbolicExpression conditionRhs,
+    public Conditional(SymbolicExpression conditionLhs, SymbolicExpression conditionRhs, String operator,
                        SymbolicExpression ifScope, SymbolicExpression elseScope) {
         this.conditionLhs = conditionLhs;
         this.operator = operator;
@@ -55,5 +55,19 @@ public class Conditional extends SymbolicExpression {
     @Override
     public SymbolicExpression accept(Visitor v) {
         return v.visit(this);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (!(other instanceof Conditional)) {
+            return false;
+        }
+        return this.equals((Conditional) other);
+    }
+
+
+    private boolean equals(Conditional other) {
+        return this.conditionLhs.equals(other.conditionLhs) && this.conditionRhs.equals(other.conditionRhs) && this.operator.equals(other.operator)
+                && this.ifScope.equals(other.ifScope) && this.elseScope.equals(other.elseScope);
     }
 }

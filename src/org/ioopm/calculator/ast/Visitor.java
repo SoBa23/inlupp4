@@ -25,5 +25,6 @@ public interface Visitor {
     SymbolicExpression visit(FunctionDeclaration n);
     SymbolicExpression visit(FunctionCall n);
     SymbolicExpression visit(Sequence n);
+    SymbolicExpression visit(NamedConstant n);
 
 }

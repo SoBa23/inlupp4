@@ -1,13 +1,35 @@
 package org.ioopm.calculator.parser;
 
-import org.ioopm.calculator.ast.*;
-
 import java.io.StreamTokenizer;
 import java.io.StringReader;
-import java.sql.SQLSyntaxErrorException;
 import java.io.IOException;
 
 import java.util.*;
+
+import org.ioopm.calculator.ast.Conditional;
+import org.ioopm.calculator.ast.Scope;
+import org.ioopm.calculator.ast.SymbolicExpression;
+import org.ioopm.calculator.ast.Addition;
+import org.ioopm.calculator.ast.Subtraction;
+import org.ioopm.calculator.ast.Multiplication;
+import org.ioopm.calculator.ast.Division;
+import org.ioopm.calculator.ast.Environment;
+import org.ioopm.calculator.ast.Assignment;
+import org.ioopm.calculator.ast.NamedConstant;
+import org.ioopm.calculator.ast.Variable;
+import org.ioopm.calculator.ast.Constant;
+import org.ioopm.calculator.ast.Quit;
+import org.ioopm.calculator.ast.Clear;
+import org.ioopm.calculator.ast.Vars;
+import org.ioopm.calculator.ast.FunctionCall;
+import org.ioopm.calculator.ast.FunctionDeclaration;
+import org.ioopm.calculator.ast.Negation;
+import org.ioopm.calculator.ast.Sin;
+import org.ioopm.calculator.ast.Cos;
+import org.ioopm.calculator.ast.Log;
+import org.ioopm.calculator.ast.Exp;
+import org.ioopm.calculator.ast.Constants;
+import org.ioopm.calculator.*;
 
 /**
  * Represents the parsing of strings into valid expressions defined in the AST.
@@ -15,7 +37,6 @@ import java.util.*;
 public class CalculatorParser {
     private StreamTokenizer st;
     private Environment vars;
-    private ScopedEnvironment env;
     private static char MULTIPLY = '*';
     private static char ADDITION = '+';
     private static char SUBTRACTION = '-';
@@ -33,7 +54,9 @@ public class CalculatorParser {
     // or 10 + x = L is not allowed
     private final ArrayList < String > unallowedVars = new ArrayList < String > (Arrays.asList("Quit",
         "Vars",
-        "Clear"));
+        "Clear",
+        "End",
+        "Function"));
 
     /**
      * Used to parse the inputted string by the Calculator program
@@ -42,13 +65,15 @@ public class CalculatorParser {
      * @return a SymbolicExpression to be evaluated
      * @throws IOException by nextToken() if it reads invalid input
      */
-    public SymbolicExpression parse(String inputString, ScopedEnvironment env) throws IOException {
+    public SymbolicExpression parse(String inputString, Environment vars) throws IOException {
         this.st = new StreamTokenizer(new StringReader(inputString)); // reads from inputString via stringreader.
-        this.env = env;
+        this.vars = vars;
         this.st.ordinaryChar('-');
         this.st.ordinaryChar('/');
+        this.st.ordinaryChar('<');
+        this.st.ordinaryChar('>'); 
         this.st.eolIsSignificant(true);
-        SymbolicExpression result = statement(true); // parse a complete statement
+        SymbolicExpression result = statement(); // calls to statement
         return result; // the final result
     }
 
@@ -58,46 +83,31 @@ public class CalculatorParser {
      * @throws IOException by nextToken() if it reads invalid input
      * @throws SyntaxErrorException if the token parsed cannot be turned into a valid expression
      */
-    // Parse a single statement. If enforceEOF is true, the statement must
-    // consume the entire input stream. This is the normal behaviour when
-    // parsing user expressions. When parsing parts of a function body we
-    // allow remaining tokens so the caller can continue parsing.
-    private SymbolicExpression statement(boolean enforceEOF) throws IOException {
+    @SuppressWarnings("static-access")
+    private SymbolicExpression statement() throws IOException {
         SymbolicExpression result;
-        this.st.nextToken(); // Look at the next token on the stream
+        this.st.nextToken(); //kollar pÃ¥ nÃ¤sta token som ligger pÃ¥ strÃ¶mmen
         if (this.st.ttype == this.st.TT_EOF) {
             throw new SyntaxErrorException("Error: Expected an expression");
         }
 
-        if (this.st.ttype == this.st.TT_WORD) {
-            if (this.st.sval.equals("Quit") || this.st.sval.equals("Vars") || this.st.sval.equals("Clear")) {
+        if (this.st.ttype == this.st.TT_WORD) { // vilken typ det senaste tecken vi lÃ¤ste in hade.
+            if (this.st.sval.equals("Quit") || this.st.sval.equals("Vars") || this.st.sval.equals("Clear") || this.st.sval.equals("End")) { // sval = string Variable
                 result = command();
+            } else if (this.st.sval.equals("Function")) {
+                result = functionDeclaration();
             } else {
-                // The first token of the expression has already been read
-                // so we let the assignment parser continue from it without
-                // pushing it back onto the stream.
-                result = assignment();
+                result = assignment(); // gÃ¥r vidare med uttrycket.
             }
         } else {
-            // Likewise for non-word tokens we simply continue parsing the
-            // assignment/expression from the current token.
-            result = assignment();
+            result = assignment(); // om inte == word, gÃ¥ till assignment Ã¤ndÃ¥ (kan vara tt_number)
         }
-        if (enforceEOF) {
-            // When parsing top-level expressions there should be no tokens left
-            // after the statement has been parsed.
-            if (this.st.nextToken() != this.st.TT_EOF) {
-                if (this.st.ttype == this.st.TT_WORD) {
-                    throw new SyntaxErrorException("Error: Unexpected '" + this.st.sval + "'");
-                } else {
-                    throw new SyntaxErrorException("Error: Unexpected '" + String.valueOf((char) this.st.ttype) + "'");
-                }
-            }
-        } else {
-            // Leave the next token for the caller
-            int next = this.st.nextToken();
-            if (next != this.st.TT_EOF) {
-                this.st.pushBack();
+
+        if (this.st.nextToken() != this.st.TT_EOF) { // token should be an end of stream token if we are done
+            if (this.st.ttype == this.st.TT_WORD) {
+                throw new SyntaxErrorException("Error: Unexpected '" + this.st.sval + "'");
+            } else {
+                throw new SyntaxErrorException("Error: Unexpected '" + String.valueOf((char) this.st.ttype) + "'");
             }
         }
         return result;
@@ -114,13 +124,47 @@ public class CalculatorParser {
             return Quit.instance();
         } else if (this.st.sval.equals("Clear")) {
             return Clear.instance();
-        } else if (this.st.sval.equals("Vars")) {
+        }else if (this.st.sval.equals("Vars")) {
             return Vars.instance();
         } else {
-            throw new SyntaxErrorException("Unknown command: " + this.st.sval);
+            return Vars.instance();
         }
     }
 
+    private SymbolicExpression functionDeclaration() throws IOException{
+        this.st.nextToken();
+        if (this.st.ttype != this.st.TT_WORD) {
+            throw new SyntaxErrorException("Expected function name after 'function'");
+        }
+        String functionName = this.st.sval;
+    
+        this.st.nextToken();
+        if (this.st.ttype != '(') {
+            throw new SyntaxErrorException("Expected '(' after function name");
+        }
+    
+        List<Variable> parameters = new ArrayList<>();
+        this.st.nextToken();
+        while (this.st.ttype != ')') {
+            if(this.st.ttype == this.st.TT_WORD){
+                parameters.add(new Variable(this.st.sval));
+                this.st.nextToken();
+                if (this.st.ttype == ',') {
+                    this.st.nextToken(); 
+                } else if (this.st.ttype == ')') {
+                    break;
+                } else {
+                    throw new SyntaxErrorException("Expected ',' or ')' in parameter list");
+                }
+            }else {
+                throw new SyntaxErrorException("Expected a String as parameter");
+            }
+        }
+    
+        List<SymbolicExpression> body = new ArrayList<>();
+    
+        return new FunctionDeclaration(functionName, body, parameters);
+    }
 
     /**
      * Checks wether the token read is an assignment between 2 expression and 
@@ -130,34 +174,25 @@ public class CalculatorParser {
      * @throws SyntaxErrorException if the token parsed cannot be turned into a valid expression,
      *         the variable on rhs of '=' is a number or invalid variable
      */
-    private SymbolicExpression assignment() throws IOException {
+    @SuppressWarnings("static-access")
+    private SymbolicExpression assignment() throws IOException, IllegalAssignmentException {
         SymbolicExpression result = expression();
         this.st.nextToken();
-
-        while (this.st.ttype == '=') {
+        while (this.st.ttype == ASSIGNMENT) {
             this.st.nextToken();
-
-            // Right-hand side should be an identifier representing the variable
             if (this.st.ttype == this.st.TT_NUMBER) {
-                throw new SyntaxErrorException("Error: Numbers cannot be used as variable names");
+                throw new SyntaxErrorException("Error: Numbers cannot be used as a variable name");
             } else if (this.st.ttype != this.st.TT_WORD) {
-                throw new SyntaxErrorException("Error: Invalid assignment syntax");
+                throw new SyntaxErrorException("Error: Not a valid assignment of a variable"); //this handles faulty inputs after the equal sign eg. 1 = (x etc
+            } else {
+                if (this.st.sval.equals("ans")) {
+                    throw new SyntaxErrorException("Error: ans cannot be redefined");
+                }
+                SymbolicExpression key = identifier();
+                result = new Assignment(result, key);
             }
-
-            SymbolicExpression key = identifier();
-
-            if (key instanceof NamedConstant) {
-                throw new RuntimeException("Error: Assignment to a named constant '" + key + "'");
-            }
-
-            if (!(key instanceof Variable)) {
-                throw new SyntaxErrorException("Error: Right-hand side of assignment must be a variable");
-            }
-
-            result = new Assignment(result, key);
             this.st.nextToken();
         }
-    
         this.st.pushBack();
         return result;
     }
@@ -169,22 +204,45 @@ public class CalculatorParser {
      * @throws IllegalExpressionException if you try to redefine a string that isn't allowed
      */
     private SymbolicExpression identifier() throws IOException {
+        SymbolicExpression result;
+
         if (this.unallowedVars.contains(this.st.sval)) {
             throw new IllegalExpressionException("Error: cannot redefine " + this.st.sval);
         }
-    
+
         if (Constants.namedConstants.containsKey(this.st.sval)) {
-            return new NamedConstant(st.sval, Constants.namedConstants.get(st.sval));
+            result = new NamedConstant(st.sval, Constants.namedConstants.get(st.sval));
         } else {
-            // Kontrollera om variabeln finns i nuvarande scope
-            SymbolicExpression value = this.env.get(new Variable(this.st.sval));
-            if (value != null) {
-                return value;
-            }
-            return new Variable(this.st.sval); // Annars skapa ny variabel
+            result = new Variable(this.st.sval);
         }
+        return result;
     }
 
+    public SymbolicExpression functionCall() throws IOException{
+        String identifier = this.st.sval;
+        this.st.nextToken();
+        if (this.st.ttype != '(') {
+            throw new SyntaxErrorException("Expected '(' after function name");
+        }
+    
+        List<SymbolicExpression> arguments = new ArrayList<>();
+
+        this.st.nextToken(); 
+        while (this.st.ttype != ')') {
+            SymbolicExpression expr = expression(); 
+            arguments.add(expr);
+            this.st.nextToken();
+            if (this.st.ttype == ',') {
+                this.st.nextToken(); 
+            } else if (this.st.ttype == ')') {
+                break;
+            } else {
+                throw new SyntaxErrorException("Expected ',' or ')' in parameter list");
+            }
+        }
+    
+        return new FunctionCall(identifier, arguments);
+    }
 
     /**
      * Checks wether the token read is an addition or subtraction
@@ -194,15 +252,7 @@ public class CalculatorParser {
      */
     private SymbolicExpression expression() throws IOException {
         SymbolicExpression result = term();
-
         this.st.nextToken();
-        // Stop parsing if we encounter the end of a scope. The token is pushed
-        // back so the surrounding code can handle the closing brace.
-        if (this.st.ttype == '}') {
-            this.st.pushBack();
-            return result;
-        }
-
         while (this.st.ttype == ADDITION || this.st.ttype == SUBTRACTION) {
             int operation = st.ttype;
             this.st.nextToken();
@@ -211,13 +261,7 @@ public class CalculatorParser {
             } else {
                 result = new Subtraction(result, term());
             }
-
             this.st.nextToken();
-
-            if (this.st.ttype == '}') {
-                // Do not consume the closing brace; leave it for the caller.
-                break;
-            }
         }
         this.st.pushBack();
         return result;
@@ -232,14 +276,7 @@ public class CalculatorParser {
      */
     private SymbolicExpression term() throws IOException {
         SymbolicExpression result = primary();
-
         this.st.nextToken();
-
-        if (this.st.ttype == '}') {
-            this.st.pushBack();
-            return result;
-        }
-
         while (this.st.ttype == MULTIPLY || this.st.ttype == DIVISION) {
             int operation = st.ttype;
             this.st.nextToken();
@@ -250,10 +287,6 @@ public class CalculatorParser {
                 result = new Division(result, primary());
             }
             this.st.nextToken();
-
-            if (this.st.ttype == '}') {
-                break;
-            }
         }
         this.st.pushBack();
         return result;
@@ -270,17 +303,9 @@ public class CalculatorParser {
      * @throws SyntaxErrorException if the token parsed cannot be turned into a valid expression,
      *         missing right parantheses
      */
+    @SuppressWarnings("static-access")
     private SymbolicExpression primary() throws IOException {
         SymbolicExpression result;
-        if(st.ttype == '{') {
-            return scope();
-        }
-        if (this.st.ttype == this.st.TT_WORD && this.st.sval.equals("if")) {
-            return conditional();
-        }
-        if (this.st.ttype == this.st.TT_WORD && this.st.sval.equals("def")) {
-            return functionDeclaration();
-        }
         if (this.st.ttype == '(') {
             this.st.nextToken();
             result = assignment();
@@ -288,13 +313,22 @@ public class CalculatorParser {
             if (this.st.nextToken() != ')') {
                 throw new SyntaxErrorException("expected ')'");
             }
-        } else if (this.st.ttype == this.st.TT_WORD && this.st.sval.equals("call")) {
-            result = functionCall();
+        } else if (this.st.ttype == '{'){
+            this.st.nextToken();
+            SymbolicExpression expr = assignment();
+            /// This captures unbalanced parentheses!
+            if (this.st.nextToken() != '}') {
+                throw new SyntaxErrorException("expected '}'");
+            }
+            result = new Scope(expr);
 
         } else if (this.st.ttype == NEGATION) {
             result = unary();
         } else if (this.st.ttype == this.st.TT_WORD) {
-            if (st.sval.equals(SIN) ||
+            if(st.sval.equals("if")){
+                result = conditional();
+
+            }else if (st.sval.equals(SIN) ||
                 st.sval.equals(COS) ||
                 st.sval.equals(EXP) ||
                 st.sval.equals(NEG) ||
@@ -302,7 +336,11 @@ public class CalculatorParser {
 
                 result = unary();
             } else {
-                result = identifier();
+                if(vars.getFunctions().containsKey(this.st.sval)){
+                    result = functionCall();
+                }else{
+                    result = identifier();
+                }
             }
         } else {
             this.st.pushBack();
@@ -310,7 +348,76 @@ public class CalculatorParser {
         }
         return result;
     }
+
+    /**
+     * handles parsing a conditional
+     * @return A Condional
+     * 
+     * @throws IOException
+     */
+    private SymbolicExpression conditional() throws IOException{
+        this.st.nextToken();
+        SymbolicExpression lhs = expression();
+
+        this.st.nextToken();
+        String operator;
+        if (this.st.ttype == '<') {
+            this.st.nextToken();
+            if (this.st.ttype == '=') {
+                operator = "<=";
+            } else {
+                this.st.pushBack(); 
+                operator = "<";
+            }
+        } else if (this.st.ttype == '>') {
+            this.st.nextToken();
+            if (this.st.ttype == '=') {
+                operator = ">=";
+            } else {
+                this.st.pushBack(); 
+                operator = ">";
+            }
+        } else if (this.st.ttype == '=') {
+            this.st.nextToken();
+            if (this.st.ttype == '=') {
+                operator = "==";
+            } else {
+                throw new SyntaxErrorException("Unexpected '='. Did you mean '=='?");
+            }
+        } else {
+            throw new SyntaxErrorException("Expected a comparison operator");
+        }
+        this.st.nextToken();
+        SymbolicExpression rhs = expression();
+        
+        // if branch, could have just called primary so the it becomes a scope duplicated code
+        if (this.st.nextToken() != '{') {
+            throw new SyntaxErrorException("Expected '{' after condition");
+        }
+        this.st.nextToken();
+        SymbolicExpression ifExpr = assignment();
+        if (this.st.nextToken() != '}') {
+            throw new SyntaxErrorException("Expected '}' after if-branch");
+        }
+        Scope ifBranch = new Scope(ifExpr);
+
+
+        if (this.st.nextToken() != StreamTokenizer.TT_WORD || !this.st.sval.equals("else")) {
+            throw new SyntaxErrorException("Expected 'else' after if-branch");
+        }
+
+        if (this.st.nextToken() != '{') {
+            throw new SyntaxErrorException("Expected '{' after else");
+        }
+        this.st.nextToken();
+        SymbolicExpression elseExpr = assignment();
+        if (this.st.nextToken() != '}') {
+            throw new SyntaxErrorException("Expected '}' after else-branch");
+        }
+        Scope elseBranch = new Scope(elseExpr);
     
+        return new Conditional(lhs, rhs, operator, ifBranch, elseBranch);
+    }
 
     /**
      * Checks what type of Unary operation the token read is and
@@ -336,7 +443,7 @@ public class CalculatorParser {
         }
         return result;
     }
-    
+
     /**
      * Checks if the token read is a number - should always be a number in this method
      * @return a SymbolicExpression to be evaluated
@@ -351,135 +458,5 @@ public class CalculatorParser {
         } else {
             throw new SyntaxErrorException("Error: Expected number");
         }
-    }
-
-    private SymbolicExpression scope() throws IOException {
-        ScopedEnvironment env = new ScopedEnvironment();
-        env.pushEnvironment(); // Starta nytt scope
-    
-        List<SymbolicExpression> expressions = new ArrayList<>();
-    
-        while (true) {
-            this.st.nextToken();
-
-            if (this.st.ttype == this.st.TT_EOF) {
-                throw new SyntaxErrorException("Error: Unexpected end of input inside scope");
-            }
-
-            if (this.st.ttype == '}') { // Slutet av scopet
-                // Do not push back the closing brace here; it belongs to this scope
-                break;
-            }
-            this.st.pushBack();
-            expressions.add(assignment()); // Lägg till uttryck i scopet
-        }
-    
-        env.popEnvironment(); // Avsluta scopet
-        return new Scope(new Sequence(expressions)); // Returnera ett Scope med en sekvens av uttryck
-    }
-    
-    
-    private SymbolicExpression conditional() throws IOException {
-        this.st.nextToken();
-        SymbolicExpression lhs = primary();
-        if (!(new HashSet<String>(Arrays.asList("<", ">", "<=", ">=", "==")).contains(this.st.sval))) {
-            throw new SyntaxErrorException("Error: Invalid comparison operator");
-        }
-        String operator = this.st.sval;
-        this.st.nextToken();
-        SymbolicExpression rhs = primary();
-
-        if (this.st.nextToken() != '{') {
-            throw new SyntaxErrorException("Error: Expected '{' after condition");
-        }
-        SymbolicExpression ifBranch = scope();
-
-        if (!this.st.sval.equals("else")) {
-            throw new SyntaxErrorException("Error: Expected 'else' after if branch");
-        }
-        this.st.nextToken();
-
-        if (this.st.nextToken() != '{') {
-            throw new SyntaxErrorException("Error: Expected '{' after else");
-        }
-        SymbolicExpression elseBranch = scope();
-
-        return new Conditional(lhs, operator, rhs, ifBranch, elseBranch);
-    }
-
-    private SymbolicExpression functionDeclaration() throws IOException {
-        this.st.nextToken();
-        if (this.st.ttype != StreamTokenizer.TT_WORD) {
-            throw new SyntaxErrorException("Error: Expected function name");
-        }
-        String functionName = this.st.sval;
-
-        this.st.nextToken();
-        if (this.st.ttype != '(') {
-            throw new SyntaxErrorException("Error: Expected '(' after function name");
-        }
-        List<String> parameters = new ArrayList<>();
-        this.st.nextToken();
-        if (this.st.ttype != ')') {
-            while (true) {
-                if (this.st.ttype != StreamTokenizer.TT_WORD) {
-                    throw new SyntaxErrorException("Error: Expected parameter name");
-                }
-                parameters.add(this.st.sval);
-                this.st.nextToken();
-                if (this.st.ttype == ')') {
-                    break;
-                } else if (this.st.ttype == ',') {
-                    this.st.nextToken();
-                    continue;
-                } else {
-                    throw new SyntaxErrorException("Error: Expected ',' or ')' in parameter list");
-                }
-            }
-        }
-
-        List<SymbolicExpression> body = new ArrayList<>();
-        while (true) {
-            this.st.nextToken();
-            if (this.st.ttype == StreamTokenizer.TT_WORD && this.st.sval.equals("end")) {
-                break;
-            }
-            this.st.pushBack();
-            body.add(statement(false));
-        }
-        return new FunctionDeclaration(functionName, parameters, new Sequence(body));
-    }
-
-    private SymbolicExpression functionCall() throws IOException {
-        this.st.nextToken(); // Läs namnet på funktionen
-        if (this.st.ttype != this.st.TT_WORD) {
-            throw new SyntaxErrorException("Error: Expected a function name");
-        }
-        String functionName = this.st.sval;
-
-        // Läs argumenten
-        this.st.nextToken();
-        if (this.st.ttype != '(') {
-            throw new SyntaxErrorException("Error: Expected '(' after function name");
-        }
-        List<SymbolicExpression> arguments = new ArrayList<>();
-        this.st.nextToken();
-        if (this.st.ttype != ')') {
-            while (true) {
-                this.st.pushBack();
-                arguments.add(expression());
-                this.st.nextToken();
-                if (this.st.ttype == ')') {
-                    break;
-                } else if (this.st.ttype == ',') {
-                    this.st.nextToken();
-                    continue;
-                } else {
-                    throw new SyntaxErrorException("Error: Expected ',' or ')' in argument list");
-                }
-            }
-        }
-
-        return new FunctionCall(functionName, arguments);
     }
 }

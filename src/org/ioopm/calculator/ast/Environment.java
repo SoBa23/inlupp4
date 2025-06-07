@@ -9,6 +9,7 @@ import java.util.TreeSet;
  * Acts as a hashmap between Variable objects and their corresponding SymbolicExpressions.
  */
 public class Environment extends HashMap<Variable, SymbolicExpression> {
+    private FuncEnvironment functions;
     
     public Environment() {
         super();
@@ -16,6 +17,10 @@ public class Environment extends HashMap<Variable, SymbolicExpression> {
 
     public Environment(Environment other) {
         super(other);
+    }
+
+    public FuncEnvironment getFunctions() {
+        return functions;
     }
 
     @Override

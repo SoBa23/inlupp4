@@ -209,7 +209,7 @@ public class EvaluationVisitor implements Visitor {
             throw new RuntimeException("Error: Undefined function '" + fc.getFunctionName() + "'");
         }
 
-        List<String> parameters = func.getParameters();
+        List<Variable> parameters = func.getParameters();
         List<SymbolicExpression> arguments = fc.getArguments();
 
         if (parameters.size() != arguments.size()) {
@@ -220,10 +220,13 @@ public class EvaluationVisitor implements Visitor {
 
         env.pushEnvironment();
         for (int i = 0; i < parameters.size(); i++) {
-            env.put(new Variable(parameters.get(i)), arguments.get(i).accept(this));
+            env.put(parameters.get(i), arguments.get(i).accept(this));
         }
 
-        SymbolicExpression result = func.getBody().accept(this);
+        SymbolicExpression result = null;
+        for (SymbolicExpression expr : func.getBody()) {
+            result = expr.accept(this);
+        }
         env.popEnvironment();
         return result;
     }
@@ -235,6 +238,15 @@ public class EvaluationVisitor implements Visitor {
             result = expr.accept(this);
         }
         return result;
+    }
+
+    @Override
+    public SymbolicExpression visit(NamedConstant nc) {
+        if (env.containsKey(nc)) {
+            return env.get(nc);
+        } else {
+            throw new RuntimeException("Named constant '" + nc.getName() + "' is not defined");
+        }
     }
 
 }

@@ -168,7 +168,9 @@ public class ReassignmentChecker implements Visitor {
         // Kontrollera funktionskroppen
         Set<String> previousAssignments = new HashSet<>(assignedVariables);
         assignedVariables.clear();
-        fd.getBody().accept(this);
+        for (SymbolicExpression expr : fd.getBody()) {
+            expr.accept(this);
+        }
         assignedVariables = previousAssignments; // Återställ variabler utanför funktionen
         return fd;
     }
@@ -179,5 +181,10 @@ public class ReassignmentChecker implements Visitor {
             expr.accept(this); // Kontrollera varje uttryck
         }
         return seq;
+    }
+
+    @Override
+    public SymbolicExpression visit(NamedConstant nc) {
+        return null;
     }
 }

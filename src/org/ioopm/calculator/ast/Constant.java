@@ -6,39 +6,38 @@ public class Constant extends Atom {
     public Constant(double value) {
         this.value = value;
     }
-
+    
     @Override
-    public String toString() {
-        return String.valueOf(this.value);
-    }
-
-    @Override
-    public double getValue() {
-        return this.value;
-    }
-
-    @Override
-    public boolean isConstant() {
+    public boolean isConstant(){
         return true;
     }
 
     @Override
-    public int getPriority() {
-        return 0;
+    public double getValue(){
+        return value;
     }
 
     @Override
-    public int hashCode() {
-        return Double.hashCode(this.value);
+    public String toString(){
+        if(value == (int)value){
+            // för att det bara ska bli t.ex 2 istället för 2.0
+            return String.valueOf((int)value);
+        }
+        return String.valueOf(value);
     }
 
-    @Override
+    // equal function
     public boolean equals(Object other) {
         if (other instanceof Constant) {
-            Constant c = (Constant) other;
-            return Double.compare(this.value, c.value) == 0;
+            return this.equals((Constant) other);
+        } else {
+            return false;
         }
-        return false;
+    }
+    
+    private boolean equals(Constant other) {
+        /// access a private field of other!
+        return this.value == other.value;
     }
 
     @Override

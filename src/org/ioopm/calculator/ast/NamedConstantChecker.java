@@ -129,7 +129,9 @@ public SymbolicExpression visit(Assignment a) {
 
     @Override
     public SymbolicExpression visit(FunctionDeclaration fd) {
-        fd.getBody().accept(this);
+        for (SymbolicExpression expr : fd.getBody()) {
+            expr.accept(this);
+        }
         return fd;
     }
 
@@ -151,5 +153,11 @@ public SymbolicExpression visit(Assignment a) {
 
     public boolean hasError() {
         return hasError;
+    }
+
+    @Override
+    public SymbolicExpression visit(NamedConstant nc) {
+        // No action needed for named constants in this checker
+        return null;
     }
 }
