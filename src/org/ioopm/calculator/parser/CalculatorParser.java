@@ -42,12 +42,14 @@ public class CalculatorParser {
     private static char ADDITION = '+';
     private static char SUBTRACTION = '-';
     private static char DIVISION = '/';
-    private static String NEG = "Neg";
+    // The AST classes use lower case operator names, so the parser should
+    // recognise the same forms when parsing expressions from `toString`.
+    private static String NEG = "neg";
     private static char NEGATION = '-';
-    private static String SIN = "Sin";
-    private static String COS = "Cos";
-    private static String LOG = "Log";
-    private static String EXP = "Exp";
+    private static String SIN = "sin";
+    private static String COS = "cos";
+    private static String LOG = "log";
+    private static String EXP = "exp";
     private static char ASSIGNMENT = '=';
 
     // unallowerdVars is used to check if variabel name that we
@@ -185,6 +187,14 @@ public class CalculatorParser {
         SymbolicExpression result = expression();
         this.st.nextToken();
         while (this.st.ttype == ASSIGNMENT) {
+            // Assigning to a named constant is not allowed. The check is
+            // performed here so that the parser throws an
+            // IllegalAssignmentException rather than a generic syntax error.
+            if (result instanceof NamedConstant) {
+                throw new IllegalAssignmentException(
+                    "Error: Assignment to a named constant '" + result.toString() + "'");
+            }
+
             this.st.nextToken();
             if (this.st.ttype == this.st.TT_NUMBER) {
                 throw new SyntaxErrorException("Error: Numbers cannot be used as a variable name");

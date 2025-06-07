@@ -18,11 +18,10 @@ public class Constant extends Atom {
     }
 
     @Override
-    public String toString(){
-        if(value == (int)value){
-            // för att det bara ska bli t.ex 2 istället för 2.0
-            return String.valueOf((int)value);
-        }
+    public String toString() {
+        // Always return the full double representation. This ensures that
+        // integer values are printed with a trailing ".0" which matches the
+        // expectations of the unit tests.
         return String.valueOf(value);
     }
 
