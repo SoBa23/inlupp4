@@ -28,6 +28,7 @@ end
 max(5, 7)      # => 7
 ```
 
+
 Functions may be recursive and can be called before they are defined.
 
 ## Compilation and Execution
