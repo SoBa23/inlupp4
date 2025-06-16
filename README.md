@@ -27,6 +27,7 @@ end
 
 max(5, 7)      # => 7
 ```
+When entering a function interactively, submit each line separately and end the definition with a single line containing `end` before calling the function.
 
 Functions may be recursive and can be called before they are defined.
 
