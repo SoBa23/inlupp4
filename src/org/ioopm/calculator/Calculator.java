@@ -102,6 +102,8 @@ public class Calculator {
                 System.out.println("Error: " + e.getMessage());
             } catch (SyntaxErrorException e) {
                 System.out.println("Syntax Error: " + e.getMessage());
+            } catch (FunctionCallException e) {
+                System.out.println(e.getMessage());
             } catch (RuntimeException e) {
                 System.out.println("Unexpected Error: " + e.getMessage());
             }

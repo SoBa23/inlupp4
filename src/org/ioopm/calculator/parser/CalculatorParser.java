@@ -224,29 +224,41 @@ public class CalculatorParser {
         return result;
     }
 
-    public SymbolicExpression functionCall() throws IOException{
+    public SymbolicExpression functionCall() throws IOException {
         String identifier = this.st.sval;
         this.st.nextToken();
         if (this.st.ttype != '(') {
             throw new SyntaxErrorException("Expected '(' after function name");
         }
-    
+
         List<SymbolicExpression> arguments = new ArrayList<>();
 
-        this.st.nextToken(); 
+        this.st.nextToken();
         while (this.st.ttype != ')') {
-            SymbolicExpression expr = expression(); 
-            arguments.add(expr);
+            SymbolicExpression arg;
+            if (this.st.ttype == this.st.TT_NUMBER) {
+                arg = new Constant(this.st.nval);
+            } else if (this.st.ttype == this.st.TT_WORD) {
+                if (Constants.namedConstants.containsKey(this.st.sval)) {
+                    arg = new NamedConstant(this.st.sval, Constants.namedConstants.get(this.st.sval));
+                } else {
+                    arg = new Variable(this.st.sval);
+                }
+            } else {
+                throw new SyntaxErrorException("Arguments to functions must be numbers or identifiers");
+            }
+
+            arguments.add(arg);
             this.st.nextToken();
             if (this.st.ttype == ',') {
-                this.st.nextToken(); 
+                this.st.nextToken();
             } else if (this.st.ttype == ')') {
                 break;
             } else {
                 throw new SyntaxErrorException("Expected ',' or ')' in parameter list");
             }
         }
-    
+
         return new FunctionCall(identifier, arguments);
     }
 
