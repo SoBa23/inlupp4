@@ -1,8 +1,8 @@
 Welcome to the Symbolic Calculator!
 Type 'Quit' to exit, 'Clear' to clear variables, or 'Vars' to see all variables.
-? 5.0
-? 8.0
-? Variables: ans = 8.0, x = 5.0
+? 5
+? 8
+? Variables: ans = 8, x = 5
 ? All variables cleared.
 ? No variables defined
 ? Exiting...
