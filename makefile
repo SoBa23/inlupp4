@@ -41,8 +41,8 @@ junit-tests:
 system-tests:
 	@echo "Running System Tests..."
 	@mkdir -p $(RESULTS_DIR)
-	java -cp $(CLASS_DIR) org.ioopm.calculator.Calculator < $(SRC_DIR)/test/org/ioopm/calculator/system_tests/input1.txt > $(RESULTS_DIR)/output1.txt
-	diff $(RESULTS_DIR)/output1.txt $(SRC_DIR)/test/org/ioopm/calculator/system_tests/expected_output1.txt || echo "Test 1 Failed"
-	java -cp $(CLASS_DIR) org.ioopm.calculator.Calculator < $(SRC_DIR)/test/org/ioopm/calculator/system_tests/input2.txt > $(RESULTS_DIR)/output2.txt
-	diff $(RESULTS_DIR)/output2.txt $(SRC_DIR)/test/org/ioopm/calculator/system_tests/expected_output2.txt || echo "Test 2 Failed"
+	java -cp $(CLASS_DIR) org.ioopm.calculator.Calculator < $(SRC_DIR)/test/java/org/ioopm/calculator/system_tests/input1.txt > $(RESULTS_DIR)/output1.txt
+	diff $(RESULTS_DIR)/output1.txt $(SRC_DIR)/test/java/org/ioopm/calculator/system_tests/expected_output1.txt || echo "Test 1 Failed"
+	java -cp $(CLASS_DIR) org.ioopm.calculator.Calculator < $(SRC_DIR)/test/java/org/ioopm/calculator/system_tests/input2.txt > $(RESULTS_DIR)/output2.txt
+	diff $(RESULTS_DIR)/output2.txt $(SRC_DIR)/test/java/org/ioopm/calculator/system_tests/expected_output2.txt || echo "Test 2 Failed"
 	@echo "System Tests Completed"

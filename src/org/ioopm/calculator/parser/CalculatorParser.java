@@ -224,9 +224,8 @@ public class CalculatorParser {
         return result;
     }
 
-    public SymbolicExpression functionCall() throws IOException {
-        String identifier = this.st.sval;
-        this.st.nextToken();
+    public SymbolicExpression functionCall(String identifier) throws IOException {
+        // current token is assumed to be '(' when this method is called
         if (this.st.ttype != '(') {
             throw new SyntaxErrorException("Expected '(' after function name");
         }
@@ -354,10 +353,22 @@ public class CalculatorParser {
 
                 result = unary();
             } else {
-                if(vars.getFunctions().containsKey(this.st.sval)){
-                    result = functionCall();
-                }else{
-                    result = identifier();
+                // Treat any identifier followed by '(' as a function call so
+                // that recursive and forward declarations parse correctly
+                String name = this.st.sval;
+                this.st.nextToken();
+                if (this.st.ttype == '(') {
+                    result = functionCall(name);
+                } else {
+                    this.st.pushBack();
+                    if (this.unallowedVars.contains(name)) {
+                        throw new IllegalExpressionException("Error: cannot redefine " + name);
+                    }
+                    if (Constants.namedConstants.containsKey(name)) {
+                        result = new NamedConstant(name, Constants.namedConstants.get(name));
+                    } else {
+                        result = new Variable(name);
+                    }
                 }
             }
         } else {
@@ -477,4 +488,5 @@ public class CalculatorParser {
             throw new SyntaxErrorException("Error: Expected number");
         }
     }
+
 }
