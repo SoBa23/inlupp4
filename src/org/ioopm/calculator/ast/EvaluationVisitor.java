@@ -3,6 +3,7 @@ package org.ioopm.calculator.ast;
 import java.util.List;
 
 import org.ioopm.calculator.parser.IllegalAssignmentException;
+import org.ioopm.calculator.parser.FunctionCallException;
 
 public class EvaluationVisitor implements Visitor {
     private ScopedEnvironment env = null;
@@ -212,16 +213,16 @@ public class EvaluationVisitor implements Visitor {
     public SymbolicExpression visit(FunctionCall fc) {
         FunctionDeclaration func = env.getFunction(fc.getFunctionName());
         if (func == null) {
-            throw new RuntimeException("Error: Undefined function '" + fc.getFunctionName() + "'");
+            throw new FunctionCallException("Error, function '" + fc.getFunctionName() + "' is undefined.");
         }
 
         List<Variable> parameters = func.getParameters();
         List<SymbolicExpression> arguments = fc.getArguments();
 
-        if (parameters.size() != arguments.size()) {
-            throw new RuntimeException("Error: Function '" + fc.getFunctionName() +
-                    "' called with incorrect number of arguments. Expected " +
-                    parameters.size() + ", got " + arguments.size());
+        if (arguments.size() < parameters.size()) {
+            throw new FunctionCallException("Error, function '" + fc.getFunctionName() + "' called with too few arguments. Expected " + parameters.size() + ", got " + arguments.size() + ".");
+        } else if (arguments.size() > parameters.size()) {
+            throw new FunctionCallException("Error, function '" + fc.getFunctionName() + "' called with too many arguments. Expected " + parameters.size() + ", got " + arguments.size() + ".");
         }
 
         env.pushEnvironment();
@@ -248,11 +249,7 @@ public class EvaluationVisitor implements Visitor {
 
     @Override
     public SymbolicExpression visit(NamedConstant nc) {
-        if (env.containsKey(nc)) {
-            return env.get(nc);
-        } else {
-            throw new RuntimeException("Named constant '" + nc.getName() + "' is not defined");
-        }
+        return nc;
     }
 
 }
