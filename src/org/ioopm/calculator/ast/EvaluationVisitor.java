@@ -248,11 +248,12 @@ public class EvaluationVisitor implements Visitor {
 
     @Override
     public SymbolicExpression visit(NamedConstant nc) {
-        if (env.containsKey(nc)) {
-            return env.get(nc);
-        } else {
-            throw new RuntimeException("Named constant '" + nc.getName() + "' is not defined");
-        }
+        // Named constants should always evaluate to their numeric value.
+        // The previous implementation attempted to look them up in the
+        // environment which failed since the environment stores variables as
+        // keys.  Simply returning the constant value ensures that expressions
+        // involving named constants behave as expected.
+        return new Constant(nc.getValue());
     }
 
 }

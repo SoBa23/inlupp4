@@ -5,7 +5,9 @@ import java.util.List;
 
 public class NamedConstantChecker implements Visitor {
     private List<String> illegalAssignments = new ArrayList<>();
-    private boolean hasError = false;
+    // The checker simply records when an illegal assignment occurs instead of
+    // throwing an exception immediately.  This mirrors how the reference tests
+    // expect the class to behave.
 
     public boolean check(SymbolicExpression topLevel) {
         illegalAssignments.clear();
@@ -46,14 +48,19 @@ public class NamedConstantChecker implements Visitor {
     }
     
     @Override
-public SymbolicExpression visit(Assignment a) {
-    SymbolicExpression lhs = a.getLhs();
-    if (lhs instanceof NamedConstant) {
-        throw new RuntimeException("Error: Assignment to a named constant '" + lhs + "'");
+    public SymbolicExpression visit(Assignment a) {
+        SymbolicExpression lhs = a.getLhs();
+        // Assigning to a NamedConstant is illegal. Instead of throwing an
+        // exception directly we record the offence so that `check` simply
+        // returns false when such an assignment is encountered.
+        if (lhs instanceof NamedConstant) {
+            illegalAssignments.add(((NamedConstant) lhs).getName());
+            return a;
+        }
+
+        a.getRhs().accept(this);
+        return a;
     }
-    a.getRhs().accept(this);
-    return a;
-}
 
     @Override
     public SymbolicExpression visit(Constant c) {
@@ -156,9 +163,6 @@ public SymbolicExpression visit(Assignment a) {
         return seq;
     }
 
-    public boolean hasError() {
-        return hasError;
-    }
 
     @Override
     public SymbolicExpression visit(NamedConstant nc) {
